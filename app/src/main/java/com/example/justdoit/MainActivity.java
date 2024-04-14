@@ -14,6 +14,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.example.justdoit.helpers.TaskManager;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -22,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     AlertDialog dialog;
     LinearLayout layout;
     SharedPreferences sharedPreferences;
+    TaskManager taskManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,10 +33,12 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        //array of tasks
+        sharedPreferences = getSharedPreferences("Tasks", MODE_PRIVATE);
+        taskManager = new TaskManager(sharedPreferences);
+
         add=findViewById(R.id.add);
         layout=findViewById(R.id.container);
-
-        sharedPreferences = getSharedPreferences("Tasks", MODE_PRIVATE);
 
         buildDialog();
         add.setOnClickListener(new View.OnClickListener(){
@@ -59,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                         String taskName = name.getText().toString();
                         addCard(taskName);
                         // Save the task
-                        saveTask(taskName);
+                        taskManager.saveTask(taskName);
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -82,51 +88,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 layout.removeView(view);
-                removeTask(name);
+                taskManager.removeTask(name);
             }
         });
         layout.addView(view);
     }
 
-    //getting tasks, added the new one and updating array
-    private void saveTask(String taskName) {
-        JSONArray jsonArray = getTasksJSONArray();
-        jsonArray.put(taskName);
-        sharedPreferences.edit().putString("tasks", jsonArray.toString()).apply();
-    }
-
-    //Retrieve existing tasks, remove the selected task and then update the array of task
-    private void removeTask(String taskName) {
-        JSONArray jsonArray = getTasksJSONArray();
-
-        for (int i = 0; i < jsonArray.length(); i++) {
-            try {
-                if (jsonArray.getString(i).equals(taskName)) {
-                    jsonArray.remove(i);
-                    break;
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-
-        sharedPreferences.edit().putString("tasks", jsonArray.toString()).apply();
-    }
-
-    //gets the array of all our stored tasks in SharePreferences, if doesn't exists then return new JsonArray
-    private JSONArray getTasksJSONArray() {
-        String tasksString = sharedPreferences.getString("tasks", "[]");
-        try {
-            return new JSONArray(tasksString);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return new JSONArray();
-    }
-
     //adds the loaded tasks to the UI
     private void loadTasks() {
-        JSONArray jsonArray = getTasksJSONArray();
+        JSONArray jsonArray = taskManager.getTasksJSONArray();
         for (int i = 0; i < jsonArray.length(); i++) {
             try {
                 String taskName = jsonArray.getString(i);
