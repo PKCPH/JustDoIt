@@ -11,6 +11,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.appcompat.app.AlertDialog;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -33,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        //array of tasks
+        //getting saved tasks
         sharedPreferences = getSharedPreferences("Tasks", MODE_PRIVATE);
         taskManager = new TaskManager(sharedPreferences);
 
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
                         addCard(taskName);
                         // Save the task
                         taskManager.saveTask(taskName);
+                        name.setText("");
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -78,12 +80,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //add tasks to the UI nad sets a click listener for the delete button
-    private void addCard(String name){
+    private void addCard(String name) {
         final View view = getLayoutInflater().inflate(R.layout.card, null);
 
-        TextView nameView  = view.findViewById(R.id.name);
+        TextView nameView = view.findViewById(R.id.name);
+        final CheckBox checkBox = view.findViewById(R.id.checkbox);
         Button delete = view.findViewById(R.id.delete);
         nameView.setText(name);
+
+        boolean finished = taskManager.isTaskFinished(name);
+
         delete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,11 +97,20 @@ public class MainActivity extends AppCompatActivity {
                 taskManager.removeTask(name);
             }
         });
+        checkBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                taskManager.toggleTask(name, checkBox.isChecked());
+                loadTasks();
+            }
+        });
         layout.addView(view);
     }
 
+
     //adds the loaded tasks to the UI
     private void loadTasks() {
+        layout.removeAllViews();
         JSONArray jsonArray = taskManager.getTasksJSONArray();
         for (int i = 0; i < jsonArray.length(); i++) {
             try {
